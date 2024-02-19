@@ -35,12 +35,53 @@ class PersonFollower(Node):
         angle_max = input_msg.angle_max
         angle_increment = input_msg.angle_increment
         ranges = input_msg.ranges
-        #
-        # your code for computing vx, wz
-        #
+        
+        fwd_val = 0.2
+        rot_val = 0.2
+        
+        min_dist = 1
+        max_dist = 2
+        
+        turn_slope = 26
+        
+        lim_iz_turn = 120
+        lim_iz_fwd = 146
+        lim_dr_fwd = 213
+        lim_dr_turn = 239
+        
+        detection_area = ranges[lim_iz_turn:lim_dr_turn]
+        
+        left_area = ranges[lim_iz_turn:lim_iz_fwd]
+        
+        fwd_area = ranges[lim_iz_fwd:lim_dr_fwd]
+        
+        right_area = ranges[lim_dr_fwd:lim_dr_turn]
+        
         vx = 0.
         wz = 0.
-        #
+        
+        idx = 0
+        for degree in detection_area:
+                if min_dist < degree < max_dist:
+                        vx = 0.1 + degree/max_dist * fwd_val/2
+                        if(idx < turn_slope):
+                                wz = rot_val
+                        if(idx > (lim_dr_turn - lim_iz_turn - turn_slope)):
+                                wz = -rot_val
+                idx += 1
+                print(f"vx: {vx}")
+        #for degree in fwd_area:
+        #        if min_dist < degree < max_dist:
+        #                vx = fwd_val
+        #for degree in left_area:
+        #        if min_dist < degree < max_dist:
+        #                wz = rot_val
+        #for degree in right_area:
+        #        if min_dist < degree < max_dist:
+        #                wz = -rot_val
+                        
+        #print(fwd_area)
+        #print(f"Angle min: {angle_min}\nAngle max: {angle_max}\nAngle Increment: {angle_increment}")
         output_msg = Twist()
         output_msg.linear.x = vx
         output_msg.angular.z = wz
