@@ -1,0 +1,111 @@
+# Copyright 2016 Open Source Robotics Foundation, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+
+#COMENTARIO RICARDO Y NADIA--
+#Hemos descubierto que tenemos que cambiar la base para que funcione con los 1080 grados del Lidar, coger todos los ranges y determinar ahí los limites en vez de cortar el array para el area.
+
+import rclpy
+from rclpy.node import Node
+
+from sensor_msgs.msg import LaserScan
+from geometry_msgs.msg import Twist
+
+class PersonFollower(Node):
+
+    def __init__(self):
+        super().__init__('person_follower')
+        self.publisher_ = self.create_publisher(Twist, '/cmd_vel', 10)
+        self.subscription = self.create_subscription(
+            LaserScan,
+            '/scan',
+            self.listener_callback,
+            10)
+        self.subscription  # prevent unused variable warning
+
+    def listener_callback(self, input_msg):
+        angle_min = input_msg.angle_min
+        angle_max = input_msg.angle_max
+        angle_increment = input_msg.angle_increment
+        ranges = input_msg.ranges
+        
+        
+        min_vel = 0.2
+        fwd_val = 0.8
+        rot_val = 0.6
+        
+        min_dist = 0.6
+        max_dist = 1.6
+        
+        turn_slope = 28
+        
+        center = 0
+        det_area = 40
+        lim_iz = center - det_area
+        lim_dr = center + det_area
+        
+        detection_area = ranges[lim_iz:lim_dr]
+        area_rotation = ranges[0:360]
+        
+        vx = 0.
+        wz = 0.
+        
+        idx = 0
+        for degree in detection_area:
+                if (min_dist < degree < max_dist):
+                        vx = min_vel + degree/max_dist * fwd_val/2
+                        if(0 < idx < turn_slope):
+                                wz = -rot_val
+                        if(1080 > idx > (1080 - turn_slope)):
+                                wz = rot_val
+                idx += 1
+                print(f"vx: {vx}")
+        idx = 0
+        print(f"ranges count: {len(ranges)}")
+        print(f"area rot count: {len(area_rotation)}")
+
+        for degree in area_rotation:
+                if 0 < degree < min_dist:
+                        if(0 < idx < 180):
+                                print(f"derecha, idx: {idx}")
+                                #wz = rot_val
+                        else:
+                                print(f"izquierda, idx: {idx}")
+                                #wz = -rot_val
+                idx += 1
+        #for degree in left_area:
+        #        if min_dist < degree < max_dist:
+        #                wz = rot_val
+        #for degree in right_area:
+        #        if min_dist < degree < max_dist:
+        #                wz = -rot_val
+                        
+        #print(fwd_area)
+        #print(f"Angle min: {angle_min}\nAngle max: {angle_max}\nAngle Increment: {angle_increment}")
+        output_msg = Twist()
+        output_msg.linear.x = vx
+        output_msg.angular.z = wz
+        self.publisher_.publish(output_msg)
+
+def main(args=None):
+    rclpy.init(args=args)
+    person_follower = PersonFollower()
+    rclpy.spin(person_follower)
+    person_follower.destroy_node()
+    rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()
