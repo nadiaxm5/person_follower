@@ -23,6 +23,15 @@ class PersonFollower(Node):
     def __init__(self):
         super().__init__('person_follower')
         self.publisher_ = self.create_publisher(Twist, '/cmd_vel', 10)
+
+        qos_policy = rclpy.qos.QoSProfile(reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT, 
+                     history=rclpy.qos.HistoryPolicy.KEEP_LAST, depth=1)
+        self.subscription = self.create_subscription(
+            LaserScan,
+            '/scan',
+            self.listener_callback,
+            qos_profile=qos_policy)
+
         self.subscription = self.create_subscription(
             LaserScan,
             '/scan',
