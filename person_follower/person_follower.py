@@ -36,44 +36,46 @@ class PersonFollower(Node):
         angle_increment = input_msg.angle_increment
         ranges = input_msg.ranges
         
-        fwd_val = 0.2
-        rot_val = 0.3
+        
+        min_vel = 0.2
+        fwd_val = 0.8
+        rot_val = 0.6
         
         min_dist = 0.6
-        max_dist = 1.4
+        max_dist = 1.6
         
-        turn_slope = 26
+        turn_slope = 28
         
-        lim_iz = 144
-        lim_dr = 215
+        center = 45
+        det_area = 40
+        lim_iz = center - det_area
+        lim_dr = center + det_area
         
         detection_area = ranges[lim_iz:lim_dr]
+        area_rotation = ranges[0:360]
         
         vx = 0.
         wz = 0.
         
         idx = 0
-        for degree in detection_area:
-                if min_dist < degree < max_dist:
-                        vx = 0.06 + degree/max_dist * fwd_val/2
+        for dist_inDegree in detection_area:
+                if min_dist < dist_inDegree < max_dist:
+                        vx = min_vel + dist_inDegree/max_dist * fwd_val/2
                         if(idx < turn_slope):
-                                wz = rot_val
-                        if(idx > (lim_dr - lim_iz - turn_slope)):
                                 wz = -rot_val
+                        if(idx > (lim_dr - lim_iz - turn_slope)):
+                                wz = rot_val
                 idx += 1
-                print(f"vx: {vx}")
-        #for degree in fwd_area:
-        #        if min_dist < degree < max_dist:
-        #                vx = fwd_val
-        #for degree in left_area:
-        #        if min_dist < degree < max_dist:
-        #                wz = rot_val
-        #for degree in right_area:
-        #        if min_dist < degree < max_dist:
-        #                wz = -rot_val
-                        
-        #print(fwd_area)
-        #print(f"Angle min: {angle_min}\nAngle max: {angle_max}\nAngle Increment: {angle_increment}")
+        idx = 0
+
+        for dist_inDegree in ranges:
+                if 0 < dist_inDegree < min_dist:
+                        if(100 < idx < 540):
+                                wz = rot_val * 2
+                        elif(545 < idx < 980):
+                                wz = -rot_val * 2
+                idx += 1
+        
         output_msg = Twist()
         output_msg.linear.x = vx
         output_msg.angular.z = wz
